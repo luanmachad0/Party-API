@@ -5,64 +5,72 @@ import * as redis from 'redis';
 import Helper from '../infra/helper';
 
 class UsersController {
-    get(req, res) {
-        let client = redis.createClient({
-            socket:{
-                port: 6379,
-                host:"redis"
-            },
-            password:"Redis2019!"
-        });
-
-        client.connect();
-
-        client.get("users").then(reply => {
-            if (reply){
-                console.log("redis");
-                Helper.sendResponse(res, HttpStatus.OK, JSON.parse(reply));
-            }else{
-                console.log("db");
-                UsersService.get()
-                .then(user => {
-                    client.set("users", JSON.stringify(user))
+    async get(req, res) {
+        try {
+            let client = redis.createClient({
+                socket:{
+                    port: 6379,
+                    host:"redis"
+                },
+                password:"Redis2019!"
+            });
+    
+            client.connect();
+    
+           await client.get("users").then(reply => {
+                if (reply){
+                    Helper.sendResponse(res, HttpStatus.OK, JSON.parse(reply));
+                }else{
+                    let users = UsersService.get();
+                    client.set("users", JSON.stringify(users));
                     client.expire("users", 60);
-                    Helper.sendResponse(res, HttpStatus.OK, user)})
-                .catch(error => console.error.bind(console, `Error ${error}`));
-            }
-        });   
+                    Helper.sendResponse(res, HttpStatus.OK, users);
+                }
+            });
+        } catch (error) {
+            console.error(error);
+        }
     }
 
     async getById(req, res) {
-        const _id = req.params.id;
-
-        UsersService.getById(_id)
-            .then(user => Helper.sendResponse(res, HttpStatus.OK, user))
-            .catch(error => console.error.bind(console, `Error ${error}`))
+        try {
+            const _id = req.params.id;
+            let user = await UsersService.getById(_id);
+            Helper.sendResponse(res, HttpStatus.OK, user);
+        } catch (error) {
+            console.error(error);
+        }
     }
 
     async create(req, res) {
-        let user = req.body;
-
-        UsersService.create(user)
-            .then(user => Helper.sendResponse(res, HttpStatus.OK, 'Usuário cadastrado com sucesso'))
-            .catch(error => console.error.bind(console, `Error ${error}`))
+        try {
+            let user = req.body;
+            await UsersService.create(user);
+            Helper.sendResponse(res, HttpStatus.OK, 'Usuário cadastrado com sucesso')
+        } catch (error) {
+            console.error(error);
+        }   
     }
 
     async update(req, res) {
-        const _id = req.params.id;
-        let user = req.body;
-
-        UsersService.update(_id, user)
-            .then(user => Helper.sendResponse(res, HttpStatus.OK, ` ${user.name} foi atualizado com sucesso!`))
-            .catch(error => console.error.bind(console, `Error ${error}`))
+        try {
+            const _id = req.params.id;
+            let user = req.body;
+            await UsersService.update(_id, user);
+            Helper.sendResponse(res, HttpStatus.OK, ` ${user.name} foi atualizado com sucesso!`);
+        } catch (error) {
+            console.error(error);
+        }
     }
 
     async delete(req, res) {
-        const _id = req.params.id;
-
-        UsersService.delete(_id)
-            .then(() => Helper.sendResponse(res, HttpStatus.OK, 'Usuário foi atualizado com sucesso!'))
-            .catch(error => console.error.bind(console, `Error ${error}`))
+        try {
+            const _id = req.params.id;
+            await UsersService.delete(_id);
+            Helper.sendResponse(res, HttpStatus.OK, 'Usuário foi atualizado com sucesso!');
+        } catch (error) {
+            console.error(error); 
+        }
     }
 }
 

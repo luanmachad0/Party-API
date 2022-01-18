@@ -2,8 +2,8 @@ import UsersRepository from "../repositories/usersRepository";
 
 class UsersService {
 
-    get(){
-        let result = UsersRepository.find({});
+    async get(){
+        let result = await UsersRepository.find({});
         return result;
     }
 
